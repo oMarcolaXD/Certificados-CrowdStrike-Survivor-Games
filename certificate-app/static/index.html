@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificate Generator — CrowdStrike</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:       #E2231A;
+      --red-dark:  #8B1A10;
+      --red-dim:   rgba(226,35,26,0.12);
+      --black:     #000000;
+      --storm:     #2C2C2C;
+      --storm2:    #1A1A1A;
+      --cloud:     #F2F2F2;
+      --surf:      #61C4C9;
+      --deep-sea:  #3D474F;
+      --white:     #FFFFFF;
+      --text:      #E8E8E8;
+      --text2:     #888888;
+      --border:    #2E2E2E;
+      --gold:      #E8B84B;
+      --silver:    #A8A8A8;
+      --bronze:    #B87333;
+      --radius:    2px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--black);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--black);
+      border-bottom: 2px solid var(--red);
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar-logo img { width: 32px; height: 32px; object-fit: contain; }
+    .topbar-brand {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+    .topbar-brand span { color: var(--red); }
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text2);
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text2);
+    }
+    .status-dot.green { background: #41AB58; box-shadow: 0 0 6px rgba(65,171,88,0.6); }
+    .status-dot.red   { background: var(--red); }
+    .status-dot.pulse {
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── Layout ── */
+    .page { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    .page-header { margin-bottom: 40px; }
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .page-title span { color: var(--red); }
+    .page-subtitle {
+      font-size: 0.82rem;
+      color: var(--text2);
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Step label ── */
+    .step-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .step-num {
+      width: 22px; height: 22px;
+      background: var(--red);
+      color: var(--white);
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text2);
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--storm2);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--storm);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card.accent-top {
+      border-top-color: var(--red);
+    }
+
+    /* ── Upload grid ── */
+    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .upload-grid { grid-template-columns: 1fr; } }
+
+    .upload-zone {
+      border: 1px solid var(--border);
+      background: var(--storm);
+      padding: 20px 16px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .upload-zone:hover, .upload-zone.over {
+      border-color: var(--red);
+      background: rgba(226,35,26,0.06);
+    }
+    .upload-zone.done {
+      border-color: rgba(65,171,88,0.5);
+      background: rgba(65,171,88,0.05);
+    }
+    .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon {
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+      opacity: 0.7;
+    }
+    .upload-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--white);
+      margin-bottom: 3px;
+    }
+    .upload-hint  { font-size: 0.7rem; color: var(--text2); }
+    .upload-file  { font-size: 0.72rem; color: #41AB58; margin-top: 8px; font-weight: 600; }
+    .upload-phs   { font-size: 0.68rem; color: var(--surf); margin-top: 4px; }
+
+    /* ── Input fields ── */
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; } }
+
+    .field label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 7px;
+    }
+    .field input {
+      width: 100%;
+      background: var(--storm);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      border-radius: var(--radius);
+    }
+    .field input:focus { border-color: var(--red); }
+    .field input::placeholder { color: var(--text2); opacity: 0.6; }
+
+    /* ── Participants ── */
+    .participants-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      background: var(--storm);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.76rem;
+      padding: 10px 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+      border-radius: var(--radius);
+    }
+    textarea:focus { border-color: var(--red); }
+    .csv-hint {
+      font-size: 0.69rem;
+      color: var(--text2);
+      margin-top: 10px;
+      line-height: 1.7;
+    }
+    .csv-hint code {
+      background: var(--storm);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 2px;
+      font-family: monospace;
+      font-size: 0.68rem;
+      color: var(--surf);
+    }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    thead { background: var(--storm); border-bottom: 1px solid var(--red); }
+    th {
+      text-align: left;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text2);
+      padding: 8px 12px;
+    }
+    td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .badge-gold   { background: rgba(232,184,75,0.15);  color: var(--gold);   border: 1px solid rgba(232,184,75,0.3); }
+    .badge-silver { background: rgba(168,168,168,0.12); color: var(--silver); border: 1px solid rgba(168,168,168,0.25); }
+    .badge-bronze { background: rgba(184,115,51,0.12);  color: var(--bronze); border: 1px solid rgba(184,115,51,0.25); }
+    .badge-none   { background: rgba(136,136,136,0.1);  color: var(--text2);  border: 1px solid rgba(136,136,136,0.2); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, opacity 0.15s;
+      border-radius: var(--radius);
+    }
+    .btn-primary {
+      background: var(--red);
+      color: var(--white);
+    }
+    .btn-primary:hover:not(:disabled) { background: #c41e16; }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 7px 14px;
+      font-size: 0.7rem;
+    }
+    .btn-ghost:hover { border-color: var(--text2); color: var(--white); }
+
+    .generate-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Alert ── */
+    .alert {
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      margin-top: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border-left: 3px solid;
+    }
+    .alert-error   { background: rgba(226,35,26,0.08);  border-color: var(--red);  color: #f07070; }
+    .alert-success { background: rgba(65,171,88,0.08);  border-color: #41AB58;     color: #6dd68a; }
+    .alert-close { margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; font-size: 1rem; opacity: 0.6; }
+    .alert-close:hover { opacity: 1; }
+
+    .progress-text { font-size: 0.78rem; color: var(--text2); }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+    /* ── Opt row ── */
+    .opt-row { display: flex; align-items: center; gap: 10px; }
+    label.check-label { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; cursor: pointer; color: var(--text2); }
+    input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--red); }
+
+    .empty-state { text-align: center; color: var(--text2); padding: 28px 0; font-size: 0.82rem; border: 1px dashed var(--border); margin-top: 16px; }
+
+    /* ── Red accent line before card ── */
+    .section-gap { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <img src="/Red%20Falcon%20logo.svg" alt="CrowdStrike Falcon" onerror="this.onerror=null;this.src='/Red%20Falcon%20logo.png'" />
+    <span class="topbar-brand"><span>Crowd</span>Strike</span>
+  </div>
+  <div class="topbar-status" id="statusBar">
+    <div class="status-dot pulse" id="dotPPT"></div>
+    <span id="lblPPT">Checking PowerPoint…</span>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-title">Certificate <span>Generator</span></div>
+    <div class="page-subtitle">Fill .pptx templates with participant data and export to PDF via Microsoft PowerPoint</div>
+  </div>
+
+  <div id="alertBox" style="display:none;"></div>
+
+  <!-- Step 1 -->
+  <div class="step-label">
+    <div class="step-num">1</div>
+    <div class="step-title">Upload Templates</div>
+  </div>
+  <div class="card accent-top" style="margin-bottom:32px;">
+    <div class="upload-grid">
+
+      <div class="upload-zone" id="zoneColocados"
+           ondragover="onDragOver(event,'zoneColocados')"
+           ondragleave="onDragLeave('zoneColocados')"
+           ondrop="onDrop(event,'colocados')">
+        <input type="file" accept=".pptx" id="inputColocados" onchange="onFileChange('colocados',this)" />
+        <div class="upload-icon">🏆</div>
+        <div class="upload-label">Ranked Template</div>
+        <div class="upload-hint">1st, 2nd &amp; 3rd place participants</div>
+        <div class="upload-file" id="fileColocadosName" style="display:none;"></div>
+        <div class="upload-phs" id="fileColocadosPhs"></div>
+      </div>
+
+      <div class="upload-zone" id="zoneParticipantes"
+           ondragover="onDragOver(event,'zoneParticipantes')"
+           ondragleave="onDragLeave('zoneParticipantes')"
+           ondrop="onDrop(event,'participantes')">
+        <input type="file" accept=".pptx" id="inputParticipantes" onchange="onFileChange('participantes',this)" />
+        <div class="upload-icon">📄</div>
+        <div class="upload-label">Participant Template</div>
+        <div class="upload-hint">All other participants</div>
+        <div class="upload-file" id="fileParticipantesName" style="display:none;"></div>
+        <div class="upload-phs" id="fileParticipantesPhs"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-label">
+    <div class="step-num">2</div>
+    <div class="step-title">Event Details</div>
+  </div>
+  <div class="card accent-top" style="margin-bottom:32px;">
+    <div class="field-row">
+      <div class="field">
+        <label>Event Name</label>
+        <input type="text" id="globalEvento"
+          placeholder="e.g. Fal.Con: Falcon Hands-On Workshop"
+          oninput="parseCSV()" />
+      </div>
+      <div class="field">
+        <label>Event Date</label>
+        <input type="text" id="globalData"
+          placeholder="e.g. May 27, 2026"
+          oninput="parseCSV()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-label">
+    <div class="step-num">3</div>
+    <div class="step-title">Participants</div>
+  </div>
+  <div class="card accent-top" style="margin-bottom:32px;">
+    <div class="participants-header">
+      <div style="font-size:0.72rem;color:var(--text2);">Paste CSV or type below</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="loadExample()">Load Example</button>
+        <button class="btn btn-ghost" onclick="clearParticipants()">Clear</button>
+      </div>
+    </div>
+
+    <textarea id="csvInput"
+      placeholder="nome_completo,colocacao&#10;Ana Rodrigues,1&#10;Bruno Costa,2&#10;Carla Mendes,3&#10;Daniel Ferreira,"
+      oninput="parseCSV()"></textarea>
+
+    <div class="csv-hint">
+      Format: <code>nome_completo,colocacao</code> — event name and date are taken from the fields above<br/>
+      • <code>colocacao</code>: use <code>1</code>, <code>2</code>, <code>3</code> for top-3 or leave empty for regular participant<br/>
+      • Header row is detected and skipped automatically &nbsp;·&nbsp; Tab-separated (paste from spreadsheet) also works
+    </div>
+
+    <div class="table-wrap" id="tableWrap" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Full Name</th>
+            <th>Event</th>
+            <th>Rank</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="participantBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="emptyState">No participants loaded</div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step-label">
+    <div class="step-num">4</div>
+    <div class="step-title">Generate</div>
+  </div>
+  <div class="card accent-top">
+
+    <div class="opt-row">
+      <label class="check-label">
+        <input type="checkbox" id="chkIncludePptx" />
+        Include filled .pptx files in the .zip (in addition to PDFs)
+      </label>
+    </div>
+
+    <div class="generate-row">
+      <button class="btn btn-primary" id="btnGenerate" onclick="generate()" disabled>
+        <span id="btnIcon">▶</span>
+        <span id="btnText">Generate Certificates</span>
+      </button>
+      <span class="progress-text" id="progressText"></span>
+    </div>
+
+    <div id="generateAlert"></div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  colocados:    null,
+  participantes: null,
+  participants: [],
+  powerpointOk: false,
+};
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(async function init() {
+  await pollValidate();
+})();
+
+// ── PowerPoint polling ─────────────────────────────────────────────────────
+async function pollValidate() {
+  try {
+    let res;
+    if (state.colocados || state.participantes) {
+      const fd = new FormData();
+      if (state.colocados)     fd.append('templateColocados', state.colocados);
+      if (state.participantes) fd.append('templateParticipantes', state.participantes);
+      res = await fetch('/api/validate', { method: 'POST', body: fd });
+    } else {
+      res = await fetch('/api/validate', { method: 'POST' });
+    }
+    const data = await res.json();
+
+    const dot = document.getElementById('dotPPT');
+    const lbl = document.getElementById('lblPPT');
+
+    if (!data.powerpointReady) {
+      setTimeout(pollValidate, 1000);
+      return;
+    }
+
+    dot.classList.remove('pulse');
+    if (data.powerpointAvailable) {
+      dot.className = 'status-dot green';
+      lbl.textContent = `PowerPoint ${data.powerpointVersion || ''}`;
+      state.powerpointOk = true;
+    } else {
+      dot.className = 'status-dot red';
+      lbl.textContent = 'PowerPoint not found';
+      state.powerpointOk = false;
+    }
+
+    if (data.colocadosPlaceholders?.length) {
+      document.getElementById('fileColocadosPhs').textContent =
+        data.colocadosPlaceholders.map(p => `{{${p}}}`).join('  ');
+    }
+    if (data.participantesPlaceholders?.length) {
+      document.getElementById('fileParticipantesPhs').textContent =
+        data.participantesPlaceholders.map(p => `{{${p}}}`).join('  ');
+    }
+
+    if (data.warnings?.length) {
+      showAlert('alertBox', 'error', data.warnings.join('<br/>'));
+    }
+  } catch (e) {
+    setTimeout(pollValidate, 1000);
+    return;
+  }
+  updateGenerateButton();
+}
+
+async function validateTemplates() { await pollValidate(); }
+
+// ── File upload ─────────────────────────────────────────────────────────────
+function onFileChange(which, input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  applyFile(which, file);
+}
+function onDragOver(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(zoneId).classList.add('over');
+}
+function onDragLeave(zoneId) {
+  document.getElementById(zoneId).classList.remove('over');
+}
+function onDrop(e, which) {
+  e.preventDefault();
+  const zoneId = which === 'colocados' ? 'zoneColocados' : 'zoneParticipantes';
+  document.getElementById(zoneId).classList.remove('over');
+  const file = e.dataTransfer.files?.[0];
+  if (file) applyFile(which, file);
+}
+function applyFile(which, file) {
+  if (!file.name.toLowerCase().endsWith('.pptx')) {
+    showAlert('alertBox', 'error', `"${file.name}" is not a .pptx file`);
+    return;
+  }
+  if (which === 'colocados') {
+    state.colocados = file;
+    const el = document.getElementById('fileColocadosName');
+    el.textContent = `✓ ${file.name} (${formatBytes(file.size)})`;
+    el.style.display = 'block';
+    document.getElementById('zoneColocados').classList.add('done');
+    document.getElementById('fileColocadosPhs').textContent = '';
+  } else {
+    state.participantes = file;
+    const el = document.getElementById('fileParticipantesName');
+    el.textContent = `✓ ${file.name} (${formatBytes(file.size)})`;
+    el.style.display = 'block';
+    document.getElementById('zoneParticipantes').classList.add('done');
+    document.getElementById('fileParticipantesPhs').textContent = '';
+  }
+  validateTemplates();
+}
+
+// ── CSV parsing ─────────────────────────────────────────────────────────────
+function parseCSV() {
+  const raw          = document.getElementById('csvInput').value.trim();
+  const globalEvento = document.getElementById('globalEvento').value.trim();
+  const globalData   = document.getElementById('globalData').value.trim();
+
+  if (!raw) {
+    state.participants = [];
+    renderTable();
+    updateGenerateButton();
+    return;
+  }
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+  const HEADERS = ['nome_completo', 'nomecompleto', 'nome', 'name', 'full_name'];
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+
+  let start = 0;
+  const firstCols = lines[0].toLowerCase().split(sep).map(c => c.trim().replace(/"/g, ''));
+  if (HEADERS.some(h => firstCols.includes(h)) || firstCols[0] === 'nome_completo' || firstCols[0] === 'nome') {
+    start = 1;
+  }
+
+  const result = [];
+  for (let i = start; i < lines.length; i++) {
+    const cols = splitLine(lines[i], sep);
+    const nome = (cols[0] || '').trim().replace(/"/g, '');
+    if (!nome) continue;
+
+    const partes = nome.trim().split(/\s+/);
+    let colocacao, evento, data;
+    if (cols.length >= 4) {
+      evento    = (cols[1] || '').trim().replace(/"/g, '') || globalEvento;
+      colocacao = (cols[2] || '').trim().replace(/"/g, '');
+      data      = (cols[3] || '').trim().replace(/"/g, '') || globalData;
+    } else {
+      colocacao = (cols[1] || '').trim().replace(/"/g, '');
+      evento    = globalEvento;
+      data      = globalData;
+    }
+
+    result.push({
+      nomeCompleto: nome,
+      primeiroNome: partes[0] || '',
+      sobrenome:    partes.slice(1).join(' '),
+      evento, colocacao, data,
+    });
+  }
+
+  state.participants = result;
+  renderTable();
+  updateGenerateButton();
+}
+
+function splitLine(line, sep) {
+  if (sep === '\t') return line.split('\t');
+  const res = []; let cur = '', inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { res.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  res.push(cur);
+  return res;
+}
+
+function renderTable() {
+  const ps    = state.participants;
+  const wrap  = document.getElementById('tableWrap');
+  const empty = document.getElementById('emptyState');
+  const tbody = document.getElementById('participantBody');
+
+  if (!ps.length) {
+    wrap.style.display  = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  wrap.style.display  = 'block';
+  empty.style.display = 'none';
+
+  tbody.innerHTML = ps.map((p, i) => {
+    const badgeClass = p.colocacao === '1' ? 'badge-gold'
+                     : p.colocacao === '2' ? 'badge-silver'
+                     : p.colocacao === '3' ? 'badge-bronze'
+                     : 'badge-none';
+    const badgeText = p.colocacao === '1' ? '1st Place'
+                    : p.colocacao === '2' ? '2nd Place'
+                    : p.colocacao === '3' ? '3rd Place'
+                    : 'Participant';
+    return `<tr>
+      <td style="color:var(--text2);font-size:0.72rem;">${i + 1}</td>
+      <td style="font-weight:500;color:var(--white);">${esc(p.nomeCompleto)}</td>
+      <td style="color:var(--text2);">${esc(p.evento) || '—'}</td>
+      <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+      <td style="color:var(--text2);">${esc(p.data) || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Generate ────────────────────────────────────────────────────────────────
+async function generate() {
+  const btn      = document.getElementById('btnGenerate');
+  const btnIcon  = document.getElementById('btnIcon');
+  const btnText  = document.getElementById('btnText');
+  const progress = document.getElementById('progressText');
+
+  btn.disabled = true;
+  btnIcon.outerHTML = '<span class="spinner" id="btnIcon"></span>';
+  btnText.textContent = 'Generating…';
+  progress.textContent = `Processing ${state.participants.length} certificate(s)…`;
+  clearAlert('generateAlert');
+
+  try {
+    const fd = new FormData();
+    if (state.colocados)     fd.append('templateColocados', state.colocados);
+    if (state.participantes) fd.append('templateParticipantes', state.participantes);
+    fd.append('participants', JSON.stringify(state.participants));
+
+    const res = await fetch('/api/generate', { method: 'POST', body: fd });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'certificates.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+
+    progress.textContent = '';
+    showAlert('generateAlert', 'success',
+      `✓ ${state.participants.length} certificate(s) generated successfully. The .zip download has started.`);
+
+  } catch (e) {
+    progress.textContent = '';
+    showAlert('generateAlert', 'error', `Error: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    const spinnerEl = document.getElementById('btnIcon');
+    if (spinnerEl) spinnerEl.outerHTML = '<span id="btnIcon">▶</span>';
+    btnText.textContent = 'Generate Certificates';
+    updateGenerateButton();
+  }
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function updateGenerateButton() {
+  const hasTemplate    = !!(state.colocados || state.participantes);
+  const hasParticipants = state.participants.length > 0;
+  const hasEvento      = !!document.getElementById('globalEvento').value.trim();
+  const hasData        = !!document.getElementById('globalData').value.trim();
+  document.getElementById('btnGenerate').disabled = !(hasTemplate && hasParticipants && hasEvento && hasData);
+}
+
+function loadExample() {
+  document.getElementById('globalEvento').value = 'Fal.Con: Falcon Hands-On Workshop';
+  document.getElementById('globalData').value   = 'May 27, 2026';
+  document.getElementById('csvInput').value =
+`nome_completo,colocacao
+Ana Rodrigues,1
+Bruno Costa,2
+Carla Mendes,3
+Daniel Ferreira,
+Eduarda Lima,`;
+  parseCSV();
+}
+
+function clearParticipants() {
+  document.getElementById('csvInput').value = '';
+  parseCSV();
+}
+
+function showAlert(containerId, type, msg) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `
+    <div class="alert alert-${type}">
+      <span>${msg}</span>
+      <button class="alert-close" onclick="clearAlert('${containerId}')">×</button>
+    </div>`;
+  el.style.display = 'block';
+}
+
+function clearAlert(containerId) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  el.style.display = 'none';
+}
+
+function formatBytes(b) {
+  return b > 1024*1024 ? (b/1024/1024).toFixed(1)+' MB' : Math.round(b/1024)+' KB';
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
